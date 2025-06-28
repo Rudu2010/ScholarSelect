@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ScholarBot</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header>🎓 ScholarBot</header>
+    
+    <div class="chat" id="chat-box">
+      {% if user_input %}
+        <div class="msg user">
+          <div class="bubble">{{ user_input }}</div>
+        </div>
+      {% endif %}
+
+      {% for item in recommendations %}
+        <div class="msg bot">
+          <div class="bubble">
+            <strong>{{ item.college }}</strong><br>
+            <em>{{ item.location }}</em><br>
+            {{ item.reason }}
+          </div>
+        </div>
+      {% endfor %}
+
+      <div class="msg bot typing" id="typing-indicator" style="display: none;">
+        <div class="bubble">ScholarBot is typing...</div>
+      </div>
+    </div>
+
+    <form method="post" class="input-area" id="chat-form">
+      <textarea name="profile" id="profile" placeholder="Tell me your interests..." required></textarea>
+      <button type="submit">Send</button>
+    </form>
+  </div>
+  <script src="/static/script.js"></script>
+</body>
+</html>
