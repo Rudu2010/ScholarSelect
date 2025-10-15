@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>College Recommendation System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f0f0f0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #4361ee; text-align: center; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #4361ee; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
+        button:hover { background: #3a56e4; }
+        .results { margin-top: 30px; padding: 20px; background: #e8f4ff; border-radius: 5px; }
+        .error { color: red; margin: 20px 0; padding: 15px; background: #ffe8e8; border-radius: 5px; }
+        .loading { text-align: center; display: none; }
+        .college-options { display: flex; gap: 20px; margin-bottom: 20px; }
+        .college-option { flex: 1; text-align: center; padding: 15px; border: 2px solid #ddd; border-radius: 5px; cursor: pointer; }
+        .college-option.active { border-color: #4361ee; background: #e8f0ff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>College Recommendation System</h1>
+        <form id="preferenceForm">
+            <div class="form-group">
+                <label>College Preference</label>
+                <div class="college-options">
+                    <div class="college-option" data-type="indian">
+                        <h3>Indian Colleges</h3>
+                        <p>IITs, NITs, State Universities</p>
+                    </div>
+                    <div class="college-option" data-type="foreign">
+                        <h3>Foreign Colleges</h3>
+                        <p>Universities Abroad</p>
+                    </div>
+                </div>
+                <input type="hidden" id="collegePreference" name="collegePreference" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="math">Mathematics (1-5)</label>
+                <input type="number" id="math" name="math" min="1" max="5" value="3" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="science">Science (1-5)</label>
+                <input type="number" id="science" name="science" min="1" max="5" value="3" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="literature">Literature (1-5)</label>
+                <input type="number" id="literature" name="literature" min="1" max="5" value="3" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="careerFocus">Career Focus</label>
+                <input type="text" id="careerFocus" name="careerFocus" placeholder="e.g., Engineering, Medicine" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="location">Location Preference</label>
+                <input type="text" id="location" name="location" placeholder="e.g., Urban, Rural">
+            </div>
+            
+            <div class="form-group">
+                <label for="collegeType">College Type</label>
+                <select id="collegeType" name="collegeType">
+                    <option value="">Select College Type</option>
+                    <option value="University">University</option>
+                    <option value="Liberal Arts">Liberal Arts College</option>
+                    <option value="Technical">Technical College</option>
+                    <option value="Specialized">Specialized Institution</option>
+                </select>
+            </div>
+            
+            <button type="submit">Get Recommendations</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <p>Processing your preferences...</p>
+        </div>
+        
+        <div class="error" id="error" style="display: none;"></div>
+        
+        <div class="results" id="results" style="display: none;">
+            <h2>Recommendations</h2>
+            <div id="recommendationsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // College preference selection
+        document.querySelectorAll('.college-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.college-option').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('collegePreference').value = this.dataset.type;
+            });
+        });
+        
+        // Form submission
+        document.getElementById('preferenceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validate college preference
+            if (!document.getElementById('collegePreference').value) {
+                showError('Please select your college preference');
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const preferences = {};
+            for (let [key, value] of formData.entries()) {
+                preferences[key] = value;
+            }
+            
+            // Send to backend
+            fetch('/recommend', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(preferences)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                
+                // Display recommendations
+                displayRecommendations(data);
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                showError('Error: ' + error.message);
+            });
+        });
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+        
+        function displayRecommendations(data) {
+            const content = document.getElementById('recommendationsContent');
+            content.innerHTML = `
+                <h3>Academic Streams</h3>
+                <ul>${data.streams.map(s => `<li>${s}</li>`).join('')}</ul>
+                
+                <h3>College Types</h3>
+                <ul>${data.colleges.map(c => `<li>${c}</li>`).join('')}</ul>
+                
+                <h3>Career Paths</h3>
+                <ul>${data.careers.map(c => `<li>${c}</li>`).join('')}</ul>
+                
+                <h3>Recommended Institutions</h3>
+                <ul>${data.institutions.map(i => `<li>${i}</li>`).join('')}</ul>
+            `;
+            document.getElementById('results').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+        
